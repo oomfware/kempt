@@ -99,9 +99,12 @@ class Lexer {
 	private pos = 0;
 	// significant (non-whitespace, non-comment) tokens, for lookback
 	private sig: Token[] = [];
+	private readonly source: string;
 	private tokens: Token[] = [];
 
-	constructor(private source: string) {}
+	constructor(source: string) {
+		this.source = source;
+	}
 
 	run(): Token[] {
 		const src = this.source;

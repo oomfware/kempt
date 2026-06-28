@@ -106,10 +106,11 @@ export const indentIfBreak = (contents: Doc, id: number): IndentIfBreak => ({
 
 // #endregion
 
-const enum Mode {
-	break = 2,
-	flat = 1,
-}
+const Mode = {
+	break: 2,
+	flat: 1,
+} as const;
+type Mode = (typeof Mode)[keyof typeof Mode];
 
 /**
  * marks every group that contains a forced break (a {@link hardline} or {@link breakParent}) as `shouldBreak`,

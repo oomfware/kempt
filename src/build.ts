@@ -53,11 +53,13 @@ interface ItemsFrame {
 class Builder {
 	private i = 0;
 	private nextId = 0;
+	private readonly source: string;
+	private readonly tokens: Token[];
 
-	constructor(
-		private tokens: Token[],
-		private source: string,
-	) {}
+	constructor(tokens: Token[], source: string) {
+		this.tokens = tokens;
+		this.source = source;
+	}
 
 	build(): Doc {
 		const root: StmtFrame = {

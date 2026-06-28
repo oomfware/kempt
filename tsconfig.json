@@ -14,6 +14,7 @@
 		"declarationMap": true,
 		"emitDeclarationOnly": true,
 		"isolatedModules": true,
+		"erasableSyntaxOnly": true,
 		"verbatimModuleSyntax": true,
 		"skipLibCheck": true
 	},
