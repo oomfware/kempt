@@ -44,6 +44,13 @@ test('a generator star binds to its keyword', () => {
 	`);
 });
 
+test('a namespace star takes a space, unlike a generator star', () => {
+	expect(fmt("import * as v from 'x';")).toMatchInlineSnapshot(`"import * as v from 'x';"`);
+	expect(fmt("export * from 'x';")).toMatchInlineSnapshot(`"export * from 'x';"`);
+	expect(fmt("import type * as v from 'x';")).toMatchInlineSnapshot(`"import type * as v from 'x';"`);
+	expect(fmt("export type * from 'x';")).toMatchInlineSnapshot(`"export type * from 'x';"`);
+});
+
 test('member access on a numeric literal keeps a space so it does not re-lex', () => {
 	// `1 .toString()` must not become `1.toString()` (which lexes as `1.` then a name)
 	expect(fmt('const s = 1 .toString();')).toMatchInlineSnapshot(`"const s = 1 .toString();"`);

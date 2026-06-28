@@ -244,6 +244,14 @@ export class Spacer {
 			// an identifier after a member access is a property name, never a
 			// keyword, so `obj.catch(` is a call, not `catch (`
 			r = roles.value;
+		} else if (
+			text === '*' &&
+			kind === 'punctuator' &&
+			(this.prevText === 'export' || this.prevText === 'import' || this.prevText === 'type')
+		) {
+			// the namespace star in `import * as` / `export * from` (and their `type`
+			// variants) takes a space either side, unlike a generator star (`function*`)
+			r = roles.binary;
 		} else {
 			r = classify(text, kind, this.prev.value);
 			if (text === '?' && kind === 'punctuator') {
