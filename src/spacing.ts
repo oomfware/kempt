@@ -216,6 +216,12 @@ export class Spacer {
 	 */
 	forced = false;
 	readonly parts: Doc[] = [];
+	/**
+	 * whether this flow emitted a real `,`/`;` separator, so its bracket interior is a list with a meaningful
+	 * breakpoint. a single-item interior (`includes(locale)`) has none and so is never broken for width — only
+	 * lists and forced breaks expand.
+	 */
+	separated = false;
 	private prev: Role = roles.none;
 	private prevNumber = false;
 	private prevText = '';
@@ -324,6 +330,7 @@ export class Spacer {
 		this.prev = roles.break;
 		this.prevText = text;
 		this.prevNumber = false;
+		this.separated = true;
 	}
 
 	/** adds a line comment that stays on the current line; the flow's break follows it. */

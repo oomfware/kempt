@@ -151,6 +151,41 @@ test('golden: a short chain stays on one line', () => {
 	`);
 });
 
+test('golden: an overflowing ternary stays flat rather than cracking a trivial call', () => {
+	// kempt does not lay out `?`/`:`, so the only breakpoints are the `includes`
+	// calls; neither is a list, so the statement stays overlong instead of relocating
+	// a lone argument onto its own line to chase a width it can never reach
+	const source =
+		'LOCALE = availableLocales.includes(locale) ? locale : availableLocales.includes(language) ? language : baseLocale;';
+	expect(format(source)).toMatchInlineSnapshot(`
+		"LOCALE = availableLocales.includes(locale) ? locale : availableLocales.includes(language) ? language : baseLocale;
+		"
+	`);
+});
+
+test('golden: a list call stranded in an unbreakable tail stays flat', () => {
+	// the call owns a real separator, so it could break — but the overflow lives in
+	// the ternary tail after the `)`, which the call does not own, so it stays flat
+	const source = 'const x = foo(aaaaaaa, bbbbbbb) ? consequentValueHere : alternativeValueThatOverflowsLine;';
+	expect(format(source)).toMatchInlineSnapshot(`
+		"const x = foo(aaaaaaa, bbbbbbb) ? consequentValueHere : alternativeValueThatOverflowsLine;
+		"
+	`);
+});
+
+test('golden: a list call still breaks when its own arguments overflow', () => {
+	const source = 'const result = someFunction(argumentOne, argumentTwo, argumentThree, argumentFourHere);';
+	expect(format(source)).toMatchInlineSnapshot(`
+		"const result = someFunction(
+			argumentOne,
+			argumentTwo,
+			argumentThree,
+			argumentFourHere
+		);
+		"
+	`);
+});
+
 test('golden: trailing line comments stay on their line and force a break', () => {
 	expect(format('const o = {\na: 1, // first\nb: 2, // second\n};')).toMatchInlineSnapshot(`
 		"const o = {

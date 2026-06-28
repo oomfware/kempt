@@ -18,9 +18,21 @@ interface Group {
 	contents: Doc;
 	/** optional handle so an {@link indentIfBreak} can indent only when this group breaks. */
 	id?: number;
+	/**
+	 * measure fit against this group's own contents alone, ignoring the line that continues after it. a bracket
+	 * group breaks only for width problems inside its own construct, never to make an unbreakable suffix (a
+	 * ternary or operator tail kempt does not lay out) fit.
+	 */
+	selfScoped: boolean;
 	/** set by {@link propagateBreaks} or via {@link group}'s option; forces broken mode. */
 	shouldBreak: boolean;
 	type: 'group';
+	/**
+	 * whether exceeding the line width may break this group. a bracket interior with no list separator has no
+	 * meaningful breakpoint, so it stays flat under width pressure and only a forced break (`shouldBreak`)
+	 * expands it.
+	 */
+	widthBreakable: boolean;
 }
 
 interface IndentIfBreak {
@@ -74,11 +86,16 @@ export const breakParent: BreakParent = { type: 'breakParent' };
  * @param options `shouldBreak` forces broken mode; `id` lets an {@link indentIfBreak} key off this group
  * @returns the group command
  */
-export const group = (contents: Doc, options: { id?: number; shouldBreak?: boolean } = {}): Group => ({
+export const group = (
+	contents: Doc,
+	options: { id?: number; selfScoped?: boolean; shouldBreak?: boolean; widthBreakable?: boolean } = {},
+): Group => ({
 	contents,
 	id: options.id,
+	selfScoped: options.selfScoped ?? false,
 	shouldBreak: options.shouldBreak ?? false,
 	type: 'group',
+	widthBreakable: options.widthBreakable ?? true,
 });
 
 /**
@@ -352,11 +369,16 @@ export const printDoc = (doc: Doc, options: PrintOptions): string => {
 			}
 			case 'group': {
 				// the rest of the work is exactly the stack below `n` (the group is
-				// already popped), so fits measures the line as it would continue
+				// already popped), so fits measures the line as it would continue — unless
+				// the group is self-scoped, which measures its own contents alone so an
+				// unbreakable suffix can never crack it open. a group that is not
+				// width-breakable only breaks when forced, never to chase the line width
+				const restLen = current.selfScoped ? 0 : n;
 				const resolved =
-					!current.shouldBreak && fits(lineWidth - pos, current.contents, Mode.flat, n)
-						? Mode.flat
-						: Mode.break;
+					current.shouldBreak ||
+					(current.widthBreakable && !fits(lineWidth - pos, current.contents, Mode.flat, restLen))
+						? Mode.break
+						: Mode.flat;
 				if (current.id !== undefined) {
 					groupModes[current.id] = resolved;
 				}

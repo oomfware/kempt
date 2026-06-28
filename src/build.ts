@@ -252,7 +252,9 @@ class Builder {
 		const id = this.nextId++;
 		return group([frame.openText, indentIfBreak([edge, parts], id), edge, frame.close], {
 			id,
+			selfScoped: true,
 			shouldBreak: frame.spacer.forced,
+			widthBreakable: frame.spacer.separated,
 		});
 	}
 
@@ -420,9 +422,11 @@ const blankBetween = (prevLead: string, lead: string): boolean => {
 };
 
 /**
- * builds the layout {@link Doc} for a token stream, applying kempt's canonical policy: blocks always expand,
- * parens/brackets/objects break by width, top-level blank lines are inserted around imports and declarations,
- * and the only places a line may break are bracket interiors and commas — so a break can never land in an
+ * builds the layout {@link Doc} for a token stream, applying kempt's canonical policy: blocks always expand, a
+ * paren/bracket/object interior breaks by width only when it is a comma-separated list (a single-item
+ * interior has no meaningful breakpoint and stays flat, so an overlong expression with no list is left long
+ * rather than partially reflowed), top-level blank lines are inserted around imports and declarations, and
+ * the only places a line may break are bracket interiors and commas — so a break can never land in an
  * ASI-sensitive spot.
  *
  * @param tokens the lossless token stream from the lexer
