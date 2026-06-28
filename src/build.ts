@@ -271,11 +271,27 @@ class Builder {
 		return false;
 	}
 
+	// a method or accessor body — a non-empty block sitting directly inside an
+	// object literal — forces that object to break, so a sibling member never shares
+	// the opening line with a body that always expands. a call argument keeps hugging
+	// its block (its parent is a paren or bracket, not an object brace), so this is
+	// scoped to the object case the hug rule in `frameForced` would otherwise leave flat
+	private bodyBreaksObject(child: Frame, parent: Frame): boolean {
+		return (
+			child.type === 'statements' &&
+			child.opener !== undefined &&
+			child.out.length > 0 &&
+			parent.type === 'items' &&
+			parent.openText === '{'
+		);
+	}
+
 	// attaches a finished child's document into its parent's spacer, then applies
 	// the statement-ending flush a block triggers inside a `statements` parent
 	private attach(finished: Frame, doc: Doc, parent: Frame): void {
 		const openText = finished.type === 'statements' ? '{' : finished.openText;
-		parent.spacer.bracket(doc, finished.opener!, openText, finished.openerSpace, this.frameForced(finished));
+		const forced = this.frameForced(finished) || this.bodyBreaksObject(finished, parent);
+		parent.spacer.bracket(doc, finished.opener!, openText, finished.openerSpace, forced);
 		parent.space = false;
 		if (parent.type !== 'statements' || finished.type !== 'statements') {
 			return;

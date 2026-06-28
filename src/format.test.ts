@@ -108,6 +108,19 @@ test('golden: a callback argument hugs at a single indent level', () => {
 	`);
 });
 
+test('golden: an object with a method body breaks one member per line', () => {
+	const source = 'const o = { type: "lex", get schema() { return defs.schema } };';
+	expect(format(source)).toMatchInlineSnapshot(`
+		"const o = {
+			type: "lex",
+			get schema() {
+				return defs.schema
+			}
+		};
+		"
+	`);
+});
+
 test('golden: nested callbacks each add exactly one level', () => {
 	const source = 'describe("a", () => { it("b", () => { expect(x).toBe(y); }); });';
 	expect(format(source)).toMatchInlineSnapshot(`
