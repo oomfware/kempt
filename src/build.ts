@@ -109,7 +109,7 @@ class Builder {
 			return;
 		}
 		if (t.kind === 'lineComment' || t.kind === 'blockComment') {
-			frame.spacer.comment(this.text(t), t.kind, frame.space);
+			frame.spacer.comment(this.text(t), t.kind, frame.space, this.commentBreaks(frame.close));
 			frame.space = false;
 			this.i++;
 			return;
@@ -153,7 +153,7 @@ class Builder {
 			return;
 		}
 		if (t.kind === 'lineComment' || t.kind === 'blockComment') {
-			frame.spacer.comment(this.text(t), t.kind, frame.space);
+			frame.spacer.comment(this.text(t), t.kind, frame.space, this.commentBreaks(frame.close));
 			frame.space = false;
 			this.i++;
 			return;
@@ -362,6 +362,23 @@ class Builder {
 		// ternary consequent (`c ? (x) : y`); like `<`/`>`, leave the call to the
 		// author's spacing — a marker is written tight, with no gap before the `(`
 		return nextText === '(' && this.tokens[this.i + 1] === next;
+	}
+
+	// the layout facts the spacer needs to place the comment at the cursor: whether
+	// it stood on its own line in the source (a line boundary, or the file edge,
+	// both before and after it — an inline `/* x */` between code does not), and
+	// whether the enclosing frame's `close` comes next. a following comment is not a
+	// closer: each comment still needs the break that keeps it off the next's line,
+	// so only whitespace is skipped, never another comment
+	private commentBreaks(close: string | null): { beforeCloser: boolean; onOwnLine: boolean } {
+		const before = this.tokens[this.i - 1];
+		const after = this.tokens[this.i + 1];
+		const onOwnLine =
+			(before === undefined || (before.kind === 'whitespace' && before.newlines !== 0)) &&
+			after?.kind === 'whitespace' &&
+			after.newlines !== 0;
+		const next = after?.kind === 'whitespace' ? this.tokens[this.i + 2] : after;
+		return { beforeCloser: next === undefined || (close !== null && this.text(next) === close), onOwnLine };
 	}
 
 	// consumes and returns a line comment that trails the cursor on the same line

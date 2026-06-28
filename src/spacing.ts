@@ -344,12 +344,24 @@ export class Spacer {
 		this.prevNumber = false;
 	}
 
-	/** adds a comment, forcing a following break after a line comment. */
-	comment(text: string, kind: TokenKind, authorSpace: boolean): void {
+	/**
+	 * adds a comment.
+	 *
+	 * a line comment, and a block comment that sat on its own line (`breaks.onOwnLine`), forces the enclosing
+	 * group to break so the next token never shares the comment's line — a line comment's `//` runs to the end
+	 * of the line, and an own-line comment is kept where the author put it. the break's newline is suppressed
+	 * when the comment sits right before the group's closer (`breaks.beforeCloser`), whose own edge already
+	 * supplies it; a second newline would strand a blank line before the closer.
+	 */
+	comment(
+		text: string,
+		kind: TokenKind,
+		authorSpace: boolean,
+		breaks: { beforeCloser: boolean; onOwnLine: boolean },
+	): void {
 		// a multi-line JSDoc block (`/**` opener, every interior line a `*`
 		// continuation) is the one comment kempt re-lays out: it sits on its own
-		// lines, forcing the enclosing group to break and taking a trailing break so
-		// the next token is never glued onto the `*/`, and its body is re-indented to
+		// lines, forcing the enclosing group to break, and its body is re-indented to
 		// the comment's column. trimming each interior line before re-emitting is
 		// what keeps that stable across passes, since a prepended indent would
 		// otherwise compound. every other comment keeps its bytes verbatim
@@ -360,17 +372,23 @@ export class Spacer {
 				for (let k = 1; k < lines.length; k++) {
 					this.parts.push(hardline, ' ' + lines[k].trimStart());
 				}
-				this.parts.push(hardline);
 				this.prev = roles.break;
 				this.prevText = '';
 				this.forced = true;
+				// the reflow always lands the `*/` on its own line, so anything after it
+				// must drop below; the closer's edge handles that when nothing follows
+				if (!breaks.beforeCloser) {
+					this.parts.push(hardline);
+				}
 				return;
 			}
 		}
 		this.emit(roles.value, text, authorSpace);
 		this.prevText = '';
-		if (kind === 'lineComment') {
-			this.parts.push(hardline);
+		if (kind === 'lineComment' || breaks.onOwnLine) {
+			if (!breaks.beforeCloser) {
+				this.parts.push(hardline);
+			}
 			this.prev = roles.break;
 			this.forced = true;
 		}

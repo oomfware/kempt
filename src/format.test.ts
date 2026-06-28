@@ -230,6 +230,77 @@ test('a non-JSDoc block comment keeps its bytes and stays inline', () => {
 	expect(format(format(source)), 'idempotent').toBe(format(source));
 });
 
+test('a block comment on its own line keeps the next declaration off its line', () => {
+	// a standalone `/** … */` (a line boundary both before and after it) documents
+	// the following declaration, so it must not be glued onto its line the way a
+	// genuinely inline `/* x */` between code stays flat
+	const source = '/** docs the locale setter. */\nexport const setLocale = (locale) => locale;';
+	expect(format(source)).toMatchInlineSnapshot(`
+		"/** docs the locale setter. */
+		export const setLocale = (locale) => locale;
+		"
+	`);
+	expect(format('foo(/* a */ bar);'), 'inline block stays flat').toMatchInlineSnapshot(`
+		"foo(/* a */ bar);
+		"
+	`);
+	expect(format(format(source)), 'idempotent').toBe(format(source));
+});
+
+test('a comment that ends a block leans on the closing edge for its break', () => {
+	// the closer already breaks onto its own line, so the comment forces no second
+	// newline of its own — that would strand a blank line before the `}`. the break
+	// is still forced (a `//` would otherwise swallow the closer on reparse), and
+	// two own-line comments in a row each keep their line
+	expect(format('function f() {\n\tbar();\n\t// note\n}')).toMatchInlineSnapshot(`
+		"function f() {
+			bar();
+			// note
+		}
+		"
+	`);
+	expect(format('function f() {\n\tfoo();\n\t/* a */\n\t/* b */\n}'), 'consecutive comments')
+		.toMatchInlineSnapshot(`
+		"function f() {
+			foo();
+			/* a */
+			/* b */
+		}
+		"
+	`);
+	// a reflowed multi-line JSDoc ends on its own `*/` line; before a closer it too
+	// leans on the closing edge rather than stranding a blank line
+	expect(format('class C {\n\tm();\n\t/**\n\t * trailing doc\n\t */\n}'), 'multi-line JSDoc ends a block')
+		.toMatchInlineSnapshot(`
+		"class C {
+			m();
+			/**
+			 * trailing doc
+			 */
+		}
+		"
+	`);
+});
+
+test('a comment leading a block body sits above the first statement; inline ones stay flat', () => {
+	expect(format('function f() {\n\t// leads the body\n\treturn 1;\n}')).toMatchInlineSnapshot(`
+		"function f() {
+			// leads the body
+			return 1;
+		}
+		"
+	`);
+	// a block comment between code on one line is inline and keeps flowing
+	expect(format('const x = foo(/* inline */ a, b);'), 'inline in args').toMatchInlineSnapshot(`
+		"const x = foo(/* inline */ a, b);
+		"
+	`);
+	expect(format('const y = a + /* mid */ b;'), 'inline mid-expression').toMatchInlineSnapshot(`
+		"const y = a + /* mid */ b;
+		"
+	`);
+});
+
 test('preserves whitespace inside multi-line token interiors', () => {
 	// the formatter canonicalises layout between tokens but never rewrites a
 	// token's bytes, so whitespace sitting before a newline inside a comment,
