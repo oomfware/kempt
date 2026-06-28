@@ -314,6 +314,27 @@ export class Spacer {
 
 	/** adds a comment, forcing a following break after a line comment. */
 	comment(text: string, kind: TokenKind, authorSpace: boolean): void {
+		// a multi-line JSDoc block (`/**` opener, every interior line a `*`
+		// continuation) is the one comment kempt re-lays out: it sits on its own
+		// lines, forcing the enclosing group to break and taking a trailing break so
+		// the next token is never glued onto the `*/`, and its body is re-indented to
+		// the comment's column. trimming each interior line before re-emitting is
+		// what keeps that stable across passes, since a prepended indent would
+		// otherwise compound. every other comment keeps its bytes verbatim
+		if (kind === 'blockComment' && text.startsWith('/**')) {
+			const lines = text.split(/\r\n|\r|\n/);
+			if (lines.length > 1 && indentableBlockComment(lines)) {
+				this.emit(roles.value, lines[0].trimEnd(), authorSpace);
+				for (let k = 1; k < lines.length; k++) {
+					this.parts.push(hardline, ' ' + lines[k].trimStart());
+				}
+				this.parts.push(hardline);
+				this.prev = roles.break;
+				this.prevText = '';
+				this.forced = true;
+				return;
+			}
+		}
 		this.emit(roles.value, text, authorSpace);
 		this.prevText = '';
 		if (kind === 'lineComment') {
@@ -323,6 +344,18 @@ export class Spacer {
 		}
 	}
 }
+
+// a block comment whose every interior line (after the opener) is a `*`
+// continuation — the conventional JSDoc shape. only these are re-indented; any
+// other body keeps its deliberate interior layout verbatim
+const indentableBlockComment = (lines: string[]): boolean => {
+	for (let k = 1; k < lines.length; k++) {
+		if (!lines[k].trimStart().startsWith('*')) {
+			return false;
+		}
+	}
+	return true;
+};
 
 // operators built from `<`/`>` are ambiguous between generics and
 // comparison/shift, and `>`-led ones can even be mis-lexed across a generic

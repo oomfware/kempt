@@ -113,6 +113,36 @@ test('golden: trailing line comments stay on their line and force a break', () =
 	`);
 });
 
+test('a multi-line JSDoc comment breaks onto its own lines and re-indents to its column', () => {
+	// the comment must not be dragged onto the property line, and its `*` body is
+	// re-indented under the reflowed `/**` rather than left pinned at column 0
+	const source = 'const x = { /**\n * line one\n * @maxLength 200\n */ b: 2 };';
+	expect(format(source)).toMatchInlineSnapshot(`
+		"const x = {
+			/**
+			 * line one
+			 * @maxLength 200
+			 */
+			b: 2
+		};
+		"
+	`);
+	expect(format(format(source)), 'idempotent').toBe(format(source));
+});
+
+test('a non-JSDoc block comment keeps its bytes and stays inline', () => {
+	// only conventional `/**` JSDoc is reflowed; an ascii-art `/* */` body is left
+	// exactly as written, deliberate interior indentation and all
+	const source = 'const a = { /* not\n   jsdoc\n   art */ k: 1 };';
+	expect(format(source)).toMatchInlineSnapshot(`
+		"const a = { /* not
+		   jsdoc
+		   art */ k: 1 };
+		"
+	`);
+	expect(format(format(source)), 'idempotent').toBe(format(source));
+});
+
 test('preserves whitespace inside multi-line token interiors', () => {
 	// the formatter canonicalises layout between tokens but never rewrites a
 	// token's bytes, so whitespace sitting before a newline inside a comment,
