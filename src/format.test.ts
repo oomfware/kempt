@@ -58,6 +58,45 @@ test('golden: a declaration block expands one member per line, generics stay inl
 	`);
 });
 
+test('golden: a braced switch case body expands as a block, not an object literal', () => {
+	const source = 'switch (x) { case 1: { const y = foo(); bar(y); break; } default: { qux(); } }';
+	expect(format(source)).toMatchInlineSnapshot(`
+		"switch (x) {
+			case 1: {
+				const y = foo();
+				bar(y);
+				break;
+			}
+			default: {
+				qux();
+			}
+		}
+		"
+	`);
+});
+
+test('golden: a colon in a case test is told apart from the label colon', () => {
+	const source = 'switch (x) { case a ? b : c: { foo(); } case g({ k: v }): { bar(); } }';
+	expect(format(source)).toMatchInlineSnapshot(`
+		"switch (x) {
+			case a ? b : c: {
+				foo();
+			}
+			case g({ k: v }): {
+				bar();
+			}
+		}
+		"
+	`);
+});
+
+test('golden: object keys named case/default keep object-literal values', () => {
+	expect(format('const o = { case: { a: 1 }, default: { b: 2 } };')).toMatchInlineSnapshot(`
+		"const o = { case: { a: 1 }, default: { b: 2 } };
+		"
+	`);
+});
+
 test('golden: a callback argument hugs at a single indent level', () => {
 	const source = 'items.forEach((item) => { process(item); save(item); });';
 	expect(format(source)).toMatchInlineSnapshot(`

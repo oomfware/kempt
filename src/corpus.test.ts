@@ -28,6 +28,7 @@ const corpus = [
 	'const big = veryLongName.someMethod(argOne, argTwo, argThree, argFour, argFive, argSixSeven);',
 	'const nn = value!.property; const dd = arr[index]! / divisor;',
 	'switch (kind) { case "a": return 1; case "b": return 2; default: return 0; }',
+	'switch (kind) { case "a": { const v = load(); return v; } default: { return 0; } }',
 	'const s = "a string with // not a comment and /* not either */";',
 	'let n = 0xff_ff + 1_000_000 + 3.14e-10 + 42n;',
 	'(function () { init(); })();',

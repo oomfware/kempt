@@ -8,6 +8,11 @@
 export interface Token {
 	/** for an opening or closing brace: true when it delimits a block rather than an object literal. */
 	block?: boolean;
+	/**
+	 * for a `:` punctuator: true when it ends a switch `case`/`default` label, so the following `{` opens a
+	 * block.
+	 */
+	caseColon?: boolean;
 	end: number;
 	/** for a closing paren: true when the matching `(` followed a control keyword (`if`/`for`/`while`/...). */
 	keywordParen?: boolean;

@@ -8,6 +8,7 @@ const Char = {
 	bang: 33,
 	bom: 0xfeff,
 	closeBrace: 125,
+	colon: 58,
 	cr: 13,
 	dollar: 36,
 	dot: 46,
@@ -17,6 +18,7 @@ const Char = {
 	ls: 0x2028,
 	openBrace: 123,
 	ps: 0x2029,
+	question: 63,
 	singleQuote: 39,
 	slash: 47,
 	star: 42,
@@ -94,6 +96,11 @@ interface Open {
 }
 
 class Lexer {
+	// stack of unresolved switch labels, innermost last; each records the open-stack
+	// depth where its `case`/`default` began and how many ternary `?` are still
+	// awaiting their `:`, so the label `:` (the one at that depth with no pending
+	// ternary) can be told apart from ternary and nested colons in the test
+	private caseLabels: { depth: number; ternary: number }[] = [];
 	private nextBraceIsBlock = false;
 	private open: Open[] = [];
 	private pos = 0;
@@ -371,12 +378,26 @@ class Lexer {
 			}
 		}
 		const token = this.push('identifier', start);
-		// only class/interface/module/namespace flip the next brace to a block, so
-		// skip the slice and set lookup unless the identifier starts with c/i/m/n
+		// c/d/i/m/n lead the only keywords that steer brace classification: the
+		// declaration keywords whose `{` opens a block, and switch `case`/`default`
+		// labels whose `:` makes the following `{` a block. skip the slice otherwise
 		const c0 = src.charCodeAt(start);
-		if ((c0 === 99 || c0 === 105 || c0 === 109 || c0 === 110) && blockKeywords.has(this.text(token))) {
-			this.nextBraceIsBlock = true;
+		if (c0 === 99 || c0 === 100 || c0 === 105 || c0 === 109 || c0 === 110) {
+			const w = this.text(token);
+			if (blockKeywords.has(w)) {
+				this.nextBraceIsBlock = true;
+			} else if ((w === 'case' || w === 'default') && this.inSwitchBody()) {
+				this.caseLabels.push({ depth: this.open.length, ternary: 0 });
+			}
 		}
+	}
+
+	// whether the innermost open delimiter is a block brace, the only place a bare
+	// `case`/`default` is a switch label rather than an object key (`{ case: 1 }`)
+	// or an `export default` value
+	private inSwitchBody(): boolean {
+		const top = this.open[this.open.length - 1];
+		return top !== undefined && top.kind === 'brace' && top.opener.block === true;
 	}
 
 	private scanPunctuator(start: number): void {
@@ -410,8 +431,30 @@ class Lexer {
 			this.push('punctuator', start);
 			return;
 		}
-		this.pos += this.punctuatorLength(start);
-		this.push('punctuator', start);
+		const len = this.punctuatorLength(start);
+		this.pos += len;
+		const token = this.push('punctuator', start);
+		// resolve a pending switch label: a bare `?` defers its label colon, the
+		// matching `:` consumes it, and the next unmatched `:` at the label's depth
+		// is the label colon itself
+		if (this.caseLabels.length > 0 && (cc === Char.colon || (cc === Char.question && len === 1))) {
+			this.trackCaseLabel(token, cc);
+		}
+	}
+
+	private trackCaseLabel(colonOrQuestion: Token, cc: number): void {
+		const top = this.caseLabels[this.caseLabels.length - 1];
+		if (top.depth !== this.open.length) {
+			return;
+		}
+		if (cc === Char.question) {
+			top.ternary++;
+		} else if (top.ternary > 0) {
+			top.ternary--;
+		} else {
+			colonOrQuestion.caseColon = true;
+			this.caseLabels.pop();
+		}
 	}
 
 	private openBrace(start: number): void {
@@ -595,6 +638,10 @@ class Lexer {
 const isExpressionTerminator = (before: Token | undefined, source: string): boolean => {
 	if (!before) {
 		return false;
+	}
+	// a switch label colon opens the case body, which is a block
+	if (before.caseColon === true) {
+		return true;
 	}
 	if (before.kind === 'punctuator') {
 		const txt = source.slice(before.start, before.end);
