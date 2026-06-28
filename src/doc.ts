@@ -292,21 +292,24 @@ export const printDoc = (doc: Doc, options: PrintOptions): string => {
 				continue;
 			}
 			switch (d.type) {
-				case 'breakParent':
+				case 'breakParent': {
 					break;
-				case 'group':
+				}
+				case 'group': {
 					fitDocs[top] = d.contents;
 					fitModes[top] = d.shouldBreak ? Mode.break : mode;
 					top++;
 					break;
+				}
 				case 'indent':
-				case 'indentIfBreak':
+				case 'indentIfBreak': {
 					// measuring flat, so the indent contributes nothing
 					fitDocs[top] = d.contents;
 					fitModes[top] = mode;
 					top++;
 					break;
-				case 'line':
+				}
+				case 'line': {
 					if (mode === Mode.break || d.hard) {
 						return true;
 					}
@@ -314,6 +317,7 @@ export const printDoc = (doc: Doc, options: PrintOptions): string => {
 						left -= 1;
 					}
 					break;
+				}
 			}
 		}
 		return false;
@@ -343,8 +347,9 @@ export const printDoc = (doc: Doc, options: PrintOptions): string => {
 			continue;
 		}
 		switch (current.type) {
-			case 'breakParent':
+			case 'breakParent': {
 				break;
+			}
 			case 'group': {
 				// the rest of the work is exactly the stack below `n` (the group is
 				// already popped), so fits measures the line as it would continue
@@ -361,19 +366,21 @@ export const printDoc = (doc: Doc, options: PrintOptions): string => {
 				n++;
 				break;
 			}
-			case 'indentIfBreak':
+			case 'indentIfBreak': {
 				stackDocs[n] = current.contents;
 				stackIndents[n] = groupModes[current.id] === Mode.break ? ind + 1 : ind;
 				stackModes[n] = mode;
 				n++;
 				break;
-			case 'indent':
+			}
+			case 'indent': {
 				stackDocs[n] = current.contents;
 				stackIndents[n] = ind + 1;
 				stackModes[n] = mode;
 				n++;
 				break;
-			case 'line':
+			}
+			case 'line': {
 				if (mode === Mode.flat && !current.hard) {
 					if (!current.soft) {
 						flushIndent();
@@ -386,6 +393,7 @@ export const printDoc = (doc: Doc, options: PrintOptions): string => {
 					pos = columnOf(ind);
 				}
 				break;
+			}
 		}
 	}
 	return out.join('');

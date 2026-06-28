@@ -11,7 +11,8 @@
 	},
 	"rules": {
 		"curly": "warn",
-		"no-control-regex": "off"
+		"no-control-regex": "off",
+		"unicorn/switch-case-braces": ["warn", "always"]
 	},
 	"overrides": [
 		{

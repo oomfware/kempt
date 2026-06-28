@@ -145,43 +145,56 @@ const classify = (text: string, kind: TokenKind, prevValue: boolean): Role => {
 		case 'number':
 		case 'regex':
 		case 'string':
-		case 'template':
+		case 'template': {
 			return roles.value;
-		case 'templateHead':
+		}
+		case 'templateHead': {
 			return roles.templateHead;
-		case 'templateMiddle':
+		}
+		case 'templateMiddle': {
 			return roles.templateMiddle;
-		case 'templateTail':
+		}
+		case 'templateTail': {
 			return roles.templateTail;
-		case 'identifier':
+		}
+		case 'identifier': {
 			// value keywords (`this`, `true`, …) are not in `keywords`, so they fall
 			// through as values without a separate check
 			return keywords.has(text) ? roles.keyword : roles.value;
+		}
 		default:
 	}
 	// punctuator
 	switch (text) {
 		case '.':
-		case '?.':
+		case '?.': {
 			return roles.member;
+		}
 		case ',':
-		case ';':
+		case ';': {
 			return roles.semicolon;
-		case '@':
+		}
+		case '@': {
 			return roles.decorator;
-		case '...':
+		}
+		case '...': {
 			return roles.prefix;
-		case '~':
+		}
+		case '~': {
 			return roles.prefix;
+		}
 		case '!':
 		case '++':
-		case '--':
+		case '--': {
 			return prevValue ? roles.postfix : roles.prefix;
+		}
 		case '+':
-		case '-':
+		case '-': {
 			return prevValue ? roles.binary : roles.prefix;
-		case '*':
+		}
+		case '*': {
 			return prevValue ? roles.binary : roles.star;
+		}
 		default:
 	}
 	if (binaryOperators.has(text)) {

@@ -40,10 +40,12 @@ const isWhiteSpace = (cc: number): boolean => {
 		case 0x202f:
 		case 0x205f:
 		case 0x3000:
-		case Char.bom:
+		case Char.bom: {
 			return true;
-		default:
+		}
+		default: {
 			return cc >= 0x2000 && cc <= 0x200a;
+		}
 	}
 };
 
@@ -158,12 +160,15 @@ class Lexer {
 		}
 		switch (cc) {
 			case Char.singleQuote:
-			case Char.doubleQuote:
+			case Char.doubleQuote: {
 				return this.scanString(start, cc);
-			case Char.backtick:
+			}
+			case Char.backtick: {
 				return this.scanTemplate(start, false);
-			case Char.slash:
+			}
+			case Char.slash: {
 				return this.scanSlash(start);
+			}
 			default:
 		}
 		if (isDigit(cc) || (cc === Char.dot && isDigit(src.charCodeAt(this.pos + 1)))) {
@@ -404,25 +409,36 @@ class Lexer {
 		const src = this.source;
 		const cc = src.charCodeAt(this.pos);
 		switch (cc) {
-			case 40: // (
+			case 40: {
+				// (
 				this.pos++;
 				this.open.push({ before: this.lastSig, kind: 'paren', opener: this.push('punctuator', start) });
 				return;
-			case 91: // [
+			}
+			case 91: {
+				// [
 				this.pos++;
 				this.open.push({ before: this.lastSig, kind: 'bracket', opener: this.push('punctuator', start) });
 				return;
-			case Char.openBrace:
+			}
+			case Char.openBrace: {
 				return this.openBrace(start);
-			case 41: // )
+			}
+			case 41: {
+				// )
 				return this.closeParen(start);
-			case 93: // ]
+			}
+			case 93: {
+				// ]
 				this.pos++;
 				this.push('punctuator', start);
 				this.open.pop();
 				return;
-			case 125: // }
+			}
+			case 125: {
+				// }
 				return this.closeBrace(start);
+			}
 			default:
 		}
 		// `?.` is one token only when not followed by a digit
@@ -504,39 +520,58 @@ class Lexer {
 		const src = this.source;
 		const c1 = src.charCodeAt(start + 1);
 		switch (src.charCodeAt(start)) {
-			case 33: // !  →  != !==
+			case 33: {
+				// !  →  != !==
 				return c1 === 61 ? (src.charCodeAt(start + 2) === 61 ? 3 : 2) : 1;
+			}
 			case 37: // %  →  %=
-			case 94: // ^  →  ^=
+			case 94: {
+				// ^  →  ^=
 				return c1 === 61 ? 2 : 1;
+			}
 			case 38: // &  →  & && &= &&=
-			case 124: // | →  | || |= ||=
+			case 124: {
+				// | →  | || |= ||=
 				if (c1 === src.charCodeAt(start)) {
 					return src.charCodeAt(start + 2) === 61 ? 3 : 2;
 				}
 				return c1 === 61 ? 2 : 1;
-			case 42: // *  →  * ** *= **=
+			}
+			case 42: {
+				// *  →  * ** *= **=
 				if (c1 === 42) {
 					return src.charCodeAt(start + 2) === 61 ? 3 : 2;
 				}
 				return c1 === 61 ? 2 : 1;
-			case 43: // +  →  + ++ +=
+			}
+			case 43: {
+				// +  →  + ++ +=
 				return c1 === 43 || c1 === 61 ? 2 : 1;
-			case 45: // -  →  - -- -=
+			}
+			case 45: {
+				// -  →  - -- -=
 				return c1 === 45 || c1 === 61 ? 2 : 1;
-			case 46: // .  →  . ...
+			}
+			case 46: {
+				// .  →  . ...
 				return c1 === 46 && src.charCodeAt(start + 2) === 46 ? 3 : 1;
-			case 60: // <  →  < << <= <<=
+			}
+			case 60: {
+				// <  →  < << <= <<=
 				if (c1 === 60) {
 					return src.charCodeAt(start + 2) === 61 ? 3 : 2;
 				}
 				return c1 === 61 ? 2 : 1;
-			case 61: // =  →  = == => ===
+			}
+			case 61: {
+				// =  →  = == => ===
 				if (c1 === 61) {
 					return src.charCodeAt(start + 2) === 61 ? 3 : 2;
 				}
 				return c1 === 62 ? 2 : 1;
-			case 62: // >  →  > >> >= >>> >>= >>>=
+			}
+			case 62: {
+				// >  →  > >> >= >>> >>= >>>=
 				if (c1 === 62) {
 					if (src.charCodeAt(start + 2) === 62) {
 						return src.charCodeAt(start + 3) === 61 ? 4 : 3;
@@ -544,13 +579,17 @@ class Lexer {
 					return src.charCodeAt(start + 2) === 61 ? 3 : 2;
 				}
 				return c1 === 61 ? 2 : 1;
-			case 63: // ?  →  ? ?? ??= ?. (the early `?.` path is skipped before a digit, so `?.` can reach here)
+			}
+			case 63: {
+				// ?  →  ? ?? ??= ?. (the early `?.` path is skipped before a digit, so `?.` can reach here)
 				if (c1 === 63) {
 					return src.charCodeAt(start + 2) === 61 ? 3 : 2;
 				}
 				return c1 === 46 ? 2 : 1;
-			default:
+			}
+			default: {
 				return 1;
+			}
 		}
 	}
 
@@ -599,31 +638,40 @@ class Lexer {
 			case 'regex':
 			case 'string':
 			case 'template':
-			case 'templateTail':
+			case 'templateTail': {
 				return true;
-			case 'identifier':
+			}
+			case 'identifier': {
 				return !expressionKeywords.has(this.text(t));
+			}
 			case 'punctuator': {
 				const txt = this.text(t);
 				switch (txt) {
-					case '!':
+					case '!': {
 						// TS postfix non-null assertion chains a value end
 						return this.isPrecededByValue(t);
+					}
 					case '++':
-					case '--':
+					case '--': {
 						return true;
-					case ')':
+					}
+					case ')': {
 						return t.keywordParen !== true;
-					case ']':
+					}
+					case ']': {
 						return true;
-					case '}':
+					}
+					case '}': {
 						return t.block !== true;
-					default:
+					}
+					default: {
 						return false;
+					}
 				}
 			}
-			default:
+			default: {
 				return false;
+			}
 		}
 	}
 
