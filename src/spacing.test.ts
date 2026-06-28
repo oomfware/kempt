@@ -44,6 +44,21 @@ test('a generator star binds to its keyword', () => {
 	`);
 });
 
+test('a generator method star hugs the member, with a space after a modifier', () => {
+	expect(fmt('const o = { *gen() {} };')).toMatchInlineSnapshot(`"const o = { *gen() {} };"`);
+	expect(fmt('const o = { async *gen() {} };')).toMatchInlineSnapshot(`"const o = { async *gen() {} };"`);
+	expect(fmt('class A { static *gen() {} }')).toMatchInlineSnapshot(`
+		"class A {
+			static *gen() {}
+		}"
+	`);
+	expect(fmt('class A { *[Symbol.iterator]() {} }')).toMatchInlineSnapshot(`
+		"class A {
+			*[Symbol.iterator]() {}
+		}"
+	`);
+});
+
 test('a namespace star takes a space, unlike a generator star', () => {
 	expect(fmt("import * as v from 'x';")).toMatchInlineSnapshot(`"import * as v from 'x';"`);
 	expect(fmt("export * from 'x';")).toMatchInlineSnapshot(`"export * from 'x';"`);

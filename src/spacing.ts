@@ -252,6 +252,18 @@ export class Spacer {
 			// the namespace star in `import * as` / `export * from` (and their `type`
 			// variants) takes a space either side, unlike a generator star (`function*`)
 			r = roles.binary;
+		} else if (
+			text === '*' &&
+			kind === 'punctuator' &&
+			!this.prev.value &&
+			this.prevText !== 'function' &&
+			this.prevText !== 'yield'
+		) {
+			// a generator method's leading star prefixes the member, so it hugs the
+			// name (`*gen`, `*[Symbol.iterator]`) while still taking a space after a
+			// preceding modifier (`async *gen`). the `function*`/`yield*` stars keep
+			// their trailing space and fall through to `classify`
+			r = roles.prefix;
 		} else {
 			r = classify(text, kind, this.prev.value);
 			if (text === '?' && kind === 'punctuator') {
