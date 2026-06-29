@@ -1,10 +1,7 @@
 import type { Doc } from './doc.ts';
 import { group, indent, indentIfBreak, line, softline } from './doc.ts';
 import { Spacer } from './spacing.ts';
-import type { Token } from './token.ts';
-
-// closing punctuator for each opener
-const closerFor: Record<string, string> = { '(': ')', '[': ']', '{': '}' };
+import { closerFor, type Token } from './token.ts';
 
 // keywords that continue the statement after a preceding block, so `} else {`
 // and `} catch {` stay on one line rather than splitting into two statements

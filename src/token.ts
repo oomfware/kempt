@@ -42,3 +42,6 @@ export type TokenKind =
 	| 'templateMiddle'
 	| 'templateTail'
 	| 'whitespace';
+
+/** the closing punctuator that matches each opening bracket. */
+export const closerFor: Record<string, string> = { '(': ')', '[': ']', '{': '}' };

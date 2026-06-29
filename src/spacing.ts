@@ -1,8 +1,6 @@
 import type { Doc } from './doc.ts';
 import { breakParent, hardline, line } from './doc.ts';
-import type { Token, TokenKind } from './token.ts';
-
-const closerFor: Record<string, string> = { '(': ')', '[': ']', '{': '}' };
+import { closerFor, type Token, type TokenKind } from './token.ts';
 
 // reserved words that take a space before whatever follows them (`return x`,
 // `new Foo`, `else if`); excludes the value keywords below
