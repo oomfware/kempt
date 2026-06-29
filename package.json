@@ -8,8 +8,7 @@
 		"url": "https://codeberg.org/oomfware/kempt"
 	},
 	"files": [
-		"dist/",
-		"src/"
+		"dist/"
 	],
 	"type": "module",
 	"exports": {
