@@ -1,6 +1,6 @@
 {
 	"name": "@oomfware/kempt",
-	"version": "0.1.2",
+	"version": "0.1.3",
 	"description": "keeps your (generated) code presentable",
 	"license": "0BSD",
 	"repository": {
