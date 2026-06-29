@@ -24,7 +24,7 @@ interface Group {
 	 * ternary or operator tail kempt does not lay out) fit.
 	 */
 	selfScoped: boolean;
-	/** set by {@link propagateBreaks} or via {@link group}'s option; forces broken mode. */
+	/** set via {@link group}'s option, as {@link build} does, or by {@link propagateBreaks}; forces broken mode. */
 	shouldBreak: boolean;
 	type: 'group';
 	/**
@@ -137,6 +137,9 @@ type Mode = (typeof Mode)[keyof typeof Mode];
  * @param doc the document to scan
  * @returns whether `doc` forces a break in its enclosing group
  */
+// build resolves every group's break as it constructs the document, so the
+// format path never calls this; it exists for the printer's unit tests, which
+// assemble documents by hand
 export const propagateBreaks = (doc: Doc): boolean => {
 	// a container (an array or a group/indent/indentIfBreak wrapper) being walked:
 	// `forced` accumulates whether any child has forced a break so far, `i` is the
@@ -217,8 +220,7 @@ const width = (text: string): number => {
  * renders a {@link Doc} to its final string, breaking groups that would exceed {@link PrintOptions.lineWidth}.
  *
  * forced breaks must already be resolved (every group's `shouldBreak` is set): {@link build} does this as it
- * constructs the document. a caller assembling a {@link Doc} by hand runs {@link propagateBreaks} over it
- * first.
+ * constructs the document, so the format path needs no separate pass.
  *
  * @param doc the document to render, with `shouldBreak` already propagated
  * @param options the rendering options
