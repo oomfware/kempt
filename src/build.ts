@@ -96,19 +96,41 @@ class Builder {
 		return result;
 	}
 
-	// dispatches the token at the cursor within a `statements` frame, mirroring a
-	// single iteration of the original recursive `statements` loop
-	private stepStatements(frame: StmtFrame, stack: Frame[]): void {
-		const t = this.tokens[this.i];
+	// consumes a whitespace or comment token at the cursor — the trivia handling
+	// both frame dispatchers share — returning true when it did, so the caller
+	// returns rather than falling through to its frame-specific token logic
+	private trivia(frame: Frame, t: Token): boolean {
 		if (t.kind === 'whitespace') {
 			frame.space = true;
 			this.i++;
-			return;
+			return true;
 		}
 		if (t.kind === 'lineComment' || t.kind === 'blockComment') {
 			frame.spacer.comment(this.text(t), t.kind, frame.space, this.commentBreaks(frame.close));
 			frame.space = false;
 			this.i++;
+			return true;
+		}
+		return false;
+	}
+
+	// emits the token at the cursor — an optional marker tight, any other token
+	// spaced — and advances; the token-emitting tail both dispatchers share
+	private emitToken(frame: Frame, t: Token, txt: string): void {
+		if (this.optionalMarker(t)) {
+			frame.spacer.tight('?');
+		} else {
+			frame.spacer.token(txt, t.kind, frame.space);
+		}
+		frame.space = false;
+		this.i++;
+	}
+
+	// dispatches the token at the cursor within a `statements` frame, mirroring a
+	// single iteration of the original recursive `statements` loop
+	private stepStatements(frame: StmtFrame, stack: Frame[]): void {
+		const t = this.tokens[this.i];
+		if (this.trivia(frame, t)) {
 			return;
 		}
 		const txt = this.text(t);
@@ -124,13 +146,7 @@ class Builder {
 			this.openChild(t, txt, frame.space, stack);
 			return;
 		}
-		if (this.optionalMarker(t)) {
-			frame.spacer.tight('?');
-		} else {
-			frame.spacer.token(txt, t.kind, frame.space);
-		}
-		frame.space = false;
-		this.i++;
+		this.emitToken(frame, t, txt);
 		if (t.kind === 'punctuator' && txt === ';') {
 			const trailing = this.trailingComment();
 			if (trailing !== undefined) {
@@ -144,15 +160,7 @@ class Builder {
 	// single iteration of the original recursive `items` loop
 	private stepItems(frame: ItemsFrame, stack: Frame[]): void {
 		const t = this.tokens[this.i];
-		if (t.kind === 'whitespace') {
-			frame.space = true;
-			this.i++;
-			return;
-		}
-		if (t.kind === 'lineComment' || t.kind === 'blockComment') {
-			frame.spacer.comment(this.text(t), t.kind, frame.space, this.commentBreaks(frame.close));
-			frame.space = false;
-			this.i++;
+		if (this.trivia(frame, t)) {
 			return;
 		}
 		const txt = this.text(t);
@@ -173,13 +181,7 @@ class Builder {
 			this.openChild(t, txt, frame.space, stack);
 			return;
 		}
-		if (this.optionalMarker(t)) {
-			frame.spacer.tight('?');
-		} else {
-			frame.spacer.token(txt, t.kind, frame.space);
-		}
-		frame.space = false;
-		this.i++;
+		this.emitToken(frame, t, txt);
 	}
 
 	// pushes a child frame for a bracketed construct; the cursor is on the opener,
