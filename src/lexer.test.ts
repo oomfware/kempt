@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest';
 
 import { tokenize } from './lexer.ts';
-import type { Token } from './token.ts';
+import { type Token, TokenFlag } from './token.ts';
 
 const slice = (source: string, t: Token): string => source.slice(t.start, t.end);
 
@@ -124,8 +124,10 @@ test('numbers, identifiers, decorators', () => {
 });
 
 test('brace block vs object-literal classification', () => {
-	const blockOf = (source: string): boolean | undefined =>
-		tokenize(source).find((t) => t.kind === 'punctuator' && slice(source, t) === '{')?.block;
+	const blockOf = (source: string): boolean => {
+		const brace = tokenize(source).find((t) => t.kind === 'punctuator' && slice(source, t) === '{');
+		return brace !== undefined && (brace.flags & TokenFlag.block) !== 0;
+	};
 	expect(blockOf('function f() { return 1; }')).toBe(true);
 	expect(blockOf('if (x) { y(); }')).toBe(true);
 	expect(blockOf('class A { }')).toBe(true);

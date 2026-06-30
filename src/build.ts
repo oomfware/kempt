@@ -1,7 +1,7 @@
 import type { Doc } from './doc.ts';
 import { group, indent, indentIfBreak, line, softline } from './doc.ts';
 import { Spacer } from './spacing.ts';
-import { closerFor, type Token } from './token.ts';
+import { closerFor, type Token, TokenFlag } from './token.ts';
 
 // keywords that continue the statement after a preceding block, so `} else {`
 // and `} catch {` stay on one line rather than splitting into two statements
@@ -189,7 +189,7 @@ class Builder {
 	// every other opener an `items` frame
 	private openChild(opener: Token, openText: string, space: boolean, stack: Frame[]): void {
 		this.i++; // consume the opener
-		if (openText === '{' && opener.block === true) {
+		if (openText === '{' && (opener.flags & TokenFlag.block) !== 0) {
 			stack.push({
 				close: '}',
 				leads: [],

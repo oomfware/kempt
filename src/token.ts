@@ -6,21 +6,28 @@
  * reformatted — so the formatter only ever rewrites the whitespace between tokens, never their interiors.
  */
 export interface Token {
-	/** for an opening or closing brace: true when it delimits a block rather than an object literal. */
-	block?: boolean;
-	/**
-	 * for a `:` punctuator: true when it ends a switch `case`/`default` label, so the following `{` opens a
-	 * block.
-	 */
-	caseColon?: boolean;
 	end: number;
-	/** for a closing paren: true when the matching `(` followed a control keyword (`if`/`for`/`while`/...). */
-	keywordParen?: boolean;
+	/** a bit set of {@link TokenFlag} markers, or 0 when the token carries none. */
+	flags: number;
 	kind: TokenKind;
 	/** for a `whitespace` token: the number of line terminators in the run; 0 for every other kind. */
 	newlines: number;
 	start: number;
 }
+
+/**
+ * the marker bits packed into {@link Token.flags}. they live in one integer, rather than separate boolean
+ * fields added to a token on demand, so every token shares a single object shape and the hot readers over the
+ * stream stay monomorphic.
+ */
+export const TokenFlag = {
+	/** an opening or closing brace that delimits a block rather than an object literal. */
+	block: 1,
+	/** a `:` that ends a switch `case`/`default` label, so the following `{` opens a block. */
+	caseColon: 2,
+	/** a closing paren whose matching `(` followed a control keyword (`if`/`for`/`while`/...). */
+	keywordParen: 4,
+} as const;
 
 /**
  * the lexical class of a {@link Token}.

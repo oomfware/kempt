@@ -1,4 +1,4 @@
-import type { Token, TokenKind } from './token.ts';
+import { type Token, type TokenKind, TokenFlag } from './token.ts';
 
 // #region character classes
 
@@ -128,7 +128,7 @@ class Lexer {
 	}
 
 	private push(kind: TokenKind, start: number, newlines = 0): Token {
-		const token: Token = { end: this.pos, kind, newlines, start };
+		const token: Token = { end: this.pos, flags: 0, kind, newlines, start };
 		this.tokens.push(token);
 		if (kind !== 'whitespace' && kind !== 'lineComment' && kind !== 'blockComment') {
 			this.sig.push(token);
@@ -402,7 +402,7 @@ class Lexer {
 	// or an `export default` value
 	private inSwitchBody(): boolean {
 		const top = this.open[this.open.length - 1];
-		return top !== undefined && top.kind === 'brace' && top.opener.block === true;
+		return top !== undefined && top.kind === 'brace' && (top.opener.flags & TokenFlag.block) !== 0;
 	}
 
 	private scanPunctuator(start: number): void {
@@ -468,7 +468,7 @@ class Lexer {
 		} else if (top.ternary > 0) {
 			top.ternary--;
 		} else {
-			colonOrQuestion.caseColon = true;
+			colonOrQuestion.flags |= TokenFlag.caseColon;
 			this.caseLabels.pop();
 		}
 	}
@@ -482,7 +482,9 @@ class Lexer {
 			this.nextBraceIsBlock || before === undefined || isExpressionTerminator(before, this.source);
 		this.nextBraceIsBlock = false;
 		const token = this.push('punctuator', start);
-		token.block = block;
+		if (block) {
+			token.flags |= TokenFlag.block;
+		}
 		this.open.push({ before, kind: 'brace', opener: token });
 	}
 
@@ -490,11 +492,13 @@ class Lexer {
 		this.pos++;
 		const token = this.push('punctuator', start);
 		const entry = this.open.pop();
-		if (entry) {
-			token.keywordParen =
-				entry.before !== undefined &&
-				entry.before.kind === 'identifier' &&
-				controlKeywords.has(this.text(entry.before));
+		if (
+			entry !== undefined &&
+			entry.before !== undefined &&
+			entry.before.kind === 'identifier' &&
+			controlKeywords.has(this.text(entry.before))
+		) {
+			token.flags |= TokenFlag.keywordParen;
 		}
 	}
 
@@ -508,7 +512,7 @@ class Lexer {
 		const token = this.push('punctuator', start);
 		const entry = this.open.pop();
 		if (entry) {
-			token.block = entry.opener.block;
+			token.flags |= entry.opener.flags & TokenFlag.block;
 		}
 	}
 
@@ -656,13 +660,13 @@ class Lexer {
 						return true;
 					}
 					case ')': {
-						return t.keywordParen !== true;
+						return (t.flags & TokenFlag.keywordParen) === 0;
 					}
 					case ']': {
 						return true;
 					}
 					case '}': {
-						return t.block !== true;
+						return (t.flags & TokenFlag.block) === 0;
 					}
 					default: {
 						return false;
@@ -688,7 +692,7 @@ const isExpressionTerminator = (before: Token | undefined, source: string): bool
 		return false;
 	}
 	// a switch label colon opens the case body, which is a block
-	if (before.caseColon === true) {
+	if ((before.flags & TokenFlag.caseColon) !== 0) {
 		return true;
 	}
 	if (before.kind === 'punctuator') {

@@ -1,6 +1,6 @@
 import type { Doc } from './doc.ts';
 import { breakParent, hardline, line } from './doc.ts';
-import { closerFor, type Token, type TokenKind } from './token.ts';
+import { closerFor, type Token, TokenFlag, type TokenKind } from './token.ts';
 
 // reserved words that take a space before whatever follows them (`return x`,
 // `new Foo`, `else if`); excludes the value keywords below
@@ -299,7 +299,7 @@ export class Spacer {
 	bracket(doc: Doc, opener: Token, openText: string, authorSpace: boolean, childForced: boolean): void {
 		const call = (openText === '(' || openText === '[') && this.prev.value;
 		this.emit(call ? roles.call : roles.open, doc, authorSpace);
-		const block = openText === '{' && opener.block === true;
+		const block = openText === '{' && (opener.flags & TokenFlag.block) !== 0;
 		this.prev = block ? roles.blockClose : roles.close;
 		this.prevText = closerFor[openText];
 		this.forced ||= childForced;
