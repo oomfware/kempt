@@ -236,7 +236,7 @@ class Builder {
 		}
 		const parts = frame.spacer.parts;
 		// a trailing separator leaves a dangling break before the closer; drop it
-		if (parts[parts.length - 1] === line) {
+		if (parts.length > 0 && parts[parts.length - 1] === line) {
 			parts.pop();
 		}
 		if (parts.length === 0) {
@@ -370,13 +370,17 @@ class Builder {
 	// closer: each comment still needs the break that keeps it off the next's line,
 	// so only whitespace is skipped, never another comment
 	private commentBreaks(close: string | null): { beforeCloser: boolean; onOwnLine: boolean } {
-		const before = this.tokens[this.i - 1];
-		const after = this.tokens[this.i + 1];
+		const tokens = this.tokens;
+		// a comment at either edge of the stream puts these lookups one past an end;
+		// index in-bounds so the reads stay monomorphic instead of loading a hole
+		const before = this.i > 0 ? tokens[this.i - 1] : undefined;
+		const after = this.i + 1 < tokens.length ? tokens[this.i + 1] : undefined;
 		const onOwnLine =
 			(before === undefined || (before.kind === 'whitespace' && before.newlines !== 0)) &&
 			after?.kind === 'whitespace' &&
 			after.newlines !== 0;
-		const next = after?.kind === 'whitespace' ? this.tokens[this.i + 2] : after;
+		const nextIndex = after?.kind === 'whitespace' ? this.i + 2 : this.i + 1;
+		const next = nextIndex < tokens.length ? tokens[nextIndex] : undefined;
 		return { beforeCloser: next === undefined || (close !== null && this.text(next) === close), onOwnLine };
 	}
 

@@ -315,7 +315,7 @@ export class Spacer {
 	separator(text: string, trailing?: string): void {
 		// an empty item (a separator straight after another, as in `for (;;)`)
 		// leaves a dangling break; drop it so the separators sit flush
-		if (this.parts[this.parts.length - 1] === line) {
+		if (this.parts.length > 0 && this.parts[this.parts.length - 1] === line) {
 			this.parts.pop();
 		}
 		this.parts.push(text);
