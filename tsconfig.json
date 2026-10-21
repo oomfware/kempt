@@ -3,6 +3,7 @@
 		"target": "esnext",
 		"lib": ["esnext"],
 		"types": ["node"],
+		"rootDir": "./src",
 		"moduleDetection": "force",
 		"module": "preserve",
 		"moduleResolution": "bundler",
